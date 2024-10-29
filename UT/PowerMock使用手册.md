@@ -446,8 +446,77 @@ PowerMockito.mockStatic(SendService.class);
 
 ![image-20241027223905714](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20241027223905714.png)
 
-### 以下是个人使用中得一个注意点：
+## 以下是个人使用中得一个注意点：
 
 ![image-20241027224109011](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20241027224109011.png)
 
 这个导入的包一定要对!
+
+## 对于static native方法的mock
+
+```java
+import org.junit.Test;
+import com.test.www.ut.JNILib;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.powermock.api.mockito.PowerMockito.when;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(value={JNILib.class, UseMockDemo.class,System.class})
+@PowerMockIgnore({"javax.management.*","javax.net.ssl.*","jdk.internal.reflect.*"})
+public class UseMockDemoTest {
+
+    UseMockDemo useMockDemo =  new UseMockDemo();;
+
+    @Test
+    public  void testUseMock() {
+        PowerMockito.mockStatic(System.class);
+        PowerMockito.mockStatic(JNILib.class);
+        when(JNILib.nativeMultiply(anyInt(),anyInt())).thenReturn(6);
+        when(JNILib.nativeAdd(anyInt(),anyInt())).thenReturn(5);
+
+        assertEquals(6, useMockDemo.useNativeMultiply(2,3));
+        assertEquals(5, useMockDemo.useNativeAdd(2,3));
+    }
+}
+
+```
+
+
+
+```java
+
+public class JNILib {
+
+    static {
+        System.loadLibrary("native-lib");
+    }
+    public static native int nativeMultiply(int a, int b);
+    public static native int nativeAdd(int a, int b);
+}
+
+```
+
+
+
+```java
+public class UseMockDemo {
+
+    public int useNativeMultiply(int a,int b) {
+        return JNILib.nativeMultiply(a, b);
+    }
+
+    public int useNativeAdd(int a, int b) {
+        return JNILib.nativeAdd(a, b);
+    }
+
+}
+
+```
+
